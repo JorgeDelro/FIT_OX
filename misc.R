@@ -87,6 +87,15 @@ functional_ANOVA_fit <- function(x){
 }
 
 
+# Create time column for ploting
+create_time <- function() {
+  
+}
+
+hm <- merge(0:23, seq(0, 45, by = 15))
+chron::chron(time = paste(hm$x, ':', hm$y, ':', 0))
+hm_prueba <- chron::chron(time = paste(hm$x, ':', hm$y, ':', 0))
+
 ## Work in progress
 
 plot_GGPLOT

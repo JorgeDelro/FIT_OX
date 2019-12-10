@@ -3,15 +3,23 @@
 plot_main_effect <- function(res, 
                              main_effect = NULL,
                              control_var = NULL,
-                             color_lines = NULL, 
+                             colors_lines = NULL, 
                              xlab = NULL, 
                              ylab = NULL, 
-                             legend_position = NULL, 
+                             legend_position = NULL,
+                             legend_label_main = NULL,
+                             legend_label_control = NULL,
                              ylim = NULL, 
                              ...) {
   
   if(is.null(main_effect) || is.null(control_var)) {
     stop("Please, specifiy a main effect or / and a control variable")
+  }
+  
+  #################################################### Check libraries
+  if (!require(scales)) {
+    install.packages("scales")
+    library(scales)
   }
   
   #if(is.null(name_plot)){
@@ -36,24 +44,29 @@ plot_main_effect <- function(res,
                            starts_with(control_var))
   
   # Create Polygons Data
-  polygons_data <- create_polygons(res.exc[[main_effect]]$G)
+  polygons_data <- create_polygons(res$res.exc[[main_effect]]$G)
   
   # Colors for lines
-  if(is.null(color_lines)) {
-  colors_lines <- c("","red","red","red","blue","blue","blue")
+  # Colors for lines
+  if(is.null(colors_lines)) {
+    colors_lines_mean <- c("red", "blue")
+    colors_lines_CI <- c("red", "blue", "red", "blue")
   } else {
-    colors_lines <- c("",rep(colors_lines$main_effect,3),rep(colors_lines$control,3))
+    colors_lines_mean <- c(colors_lines$main_effect, colors_lines$control)
+    colors_lines_CI <- c(colors_lines$main_effect, colors_lines$control, colors_lines$main_effect, colors_lines$control)
   }
   
   # Create a base plot
   plot(x = main_effect_data$time, 
        y = pull(eval(parse(text = paste("main_effect_data[",2,"]", sep = "")))), 
        type = "l", 
-       ylim = c(ylim_values$ymin, ylim_values$ymax), 
-       col = colors_lines[2], 
+       ylim = c(ylim_values$ymin, ylim_values$ymax),
+       xlim = c(0, max(main_effect_data$time)),
+       col = colors_lines_mean[1], 
        lwd = 2, 
        ylab = "", 
-       xlab = "", 
+       xlab = "",
+       
        #xaxt="n",
        bty="n")
   
@@ -67,15 +80,27 @@ plot_main_effect <- function(res,
             border = NA)
   }
   
-  # Add lines
-  for (i in 2:dim(main_effect_data)[2]) {
+  # Add lines mean
+  main_effect_data_mean <- main_effect_data %>% select(ends_with("fhat"))
+  for (i in 1:dim(main_effect_data_mean)[2]) {
     lines(x = main_effect_data$time,
-          y = pull(eval(parse(text = paste("main_effect_data[",i,"]", sep = "")))), 
+          y = pull(eval(parse(text = paste("main_effect_data_mean[",i,"]", sep = "")))), 
           type = "l",
           lwd = 2,
-          col = colors_lines[i])
+          col = colors_lines_mean[i], 0.7)
   }
   
+  # Add lines CI
+  main_effect_data_CI <- main_effect_data %>% select(ends_with("flb"),
+                                                      ends_with("fub"))
+  for (i in 1:dim(main_effect_data_CI)[2]) {
+    lines(x = main_effect_data$time,
+          y = pull(eval(parse(text = paste("main_effect_data_CI[",i,"]", sep = "")))), 
+          type = "l",
+          lwd = 2,
+          lty = 2,
+          col = alpha(colors_lines_CI[i], 0.7))
+  }
   
   for (i in length(polygons_data)) {
   # min
@@ -97,9 +122,21 @@ plot_main_effect <- function(res,
     mtext(side=2,text="y value",line=2.5)
   }
   
+  if(is.null(legend_label_main)) {
+    legend_label_main <- "main"
+  } else {
+    legend_label_main <- legend_label_main
+  }
+  
+  if(is.null(legend_label_control)) {
+    legend_label_control <- "control"
+  } else {
+    legend_label_control <- legend_label_control
+  }
+  
   legend(legend_position, 
-         legend =  c(main_effect, "control"), 
-         col = c(colors_lines[2], colors_lines[5]) , 
+         legend =  c(legend_label_main, legend_label_control), 
+         col = c(colors_lines_mean[1], colors_lines_mean[2]) , 
          bty = "n", lty=1, lwd = 3, horiz = FALSE, inset = c(0.05, 0.05))
   
   
